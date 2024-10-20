@@ -1,57 +1,48 @@
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 
-// Crea un objeto para el controlador PCA9685
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+// Inicializa el objeto para el driver PCA9685
+Adafruit_PWMServoDriver pca9685 = Adafruit_PWMServoDriver();
 
-// Definir los puertos del controlador para cada servo
-const int servo_pin[4][3] ={ {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, {9, 10, 11} };
+#define SERVOMIN  150 // Valor mínimo del pulso para el servo
+#define SERVOMAX  600 // Valor máximo del pulso para el servo
 
-// Rango de ángulo para los servos
-const int SERVO_MIN = 150;
-const int SERVO_MAX = 600;
-
-
+// Número de servos que controlaremos
+const int num_servos = 12;
 
 void setup() {
-  //Inicializa el controlador 
-  pwm.begin();
-  pwm.setPWMFreq(60); //Frecuencia de 60 Hz para los servos 
+  Serial.begin(9600);
+  Serial.println("Inicializando PCA9685 para controlar 12 servomotores");
 
-  // Establece todos los servos en la posición inicial de 90 grados
-  for(int i=0; i<4; i++){
-
-    for(int j = 0 ; j < 3 ; j++){
-
-      setServoAngle(servo_pin[i][j], 90);
-      delay(20);
-
-    }
-
-
-  }
-
+  // Inicializa el PCA9685 con la dirección I2C por defecto (0x40)
+  pca9685.begin();
+  
+  // Ajusta la frecuencia PWM para los servos (50Hz, para servos típicos)
+  pca9685.setPWMFreq(50);
+  
+  // Espera a que se estabilice
+  delay(10);
 }
 
 void loop() {
-  //Mover todos los servos a 90
-  for(int i = 0 ; i<4;i++){
-
-    for(int j = 0;j<3;j++){
-      
-      setServoAngle(servo_pin[i][j],90);
-      delay(20);
-    }
-
-
+  // Mueve todos los servos a 90 grados continuamente
+  for (int servo = 0; servo < num_servos; servo++) {
+    moverServo(servo, 0);  // Mueve cada servo a la posición de 90 grados
+    delay(100);
+    moverServo(servo, 90);  // Mueve cada servo a la posición de 90 grados
+    delay(100);
+    moverServo(servo, 180);  // Mueve cada servo a la posición de 90 grados
   }
 
+  // Puedes poner un pequeño retraso para evitar mandar señales demasiado rápido
+  delay(100);  // Envía el comando cada 500ms
 }
 
-
-//Funcion para mover el servo a un angulo en especifico 
-void setServoAngle(int servoNum , int angle){
-  int pulse = SERVO_MIN + ((SERVO_MAX - SERVO_MIN) * angle) / 180;
-  pwm.setPWM(servo_num, 0, pulse);
+// Función para mover un servo a un ángulo dado
+void moverServo(int servo_num, int angulo) {
+  // Convierte el ángulo (0-180 grados) al rango del PWM
+  int pulso = map(angulo, 0, 180, SERVOMIN, SERVOMAX);
+  
+  // Envía la señal PWM al canal correspondiente
+  pca9685.setPWM(servo_num, 0, pulso);
 }
-
