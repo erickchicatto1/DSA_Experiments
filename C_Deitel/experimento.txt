@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+#include <psapi.h>
+#include <string.h>
+
+// Función para obtener el nombre de un proceso dado su PID
+void get_process_name(DWORD pid, char *process_name, size_t size) {
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    if (hProcess == NULL) {
+        return;
+    }
+
+    // Usamos GetModuleBaseName para obtener el nombre del proceso
+    if (GetModuleBaseName(hProcess, NULL, process_name, (DWORD)size) == 0) {
+        process_name[0] = '\0';  // Si no se puede obtener el nombre, lo dejamos vacío
+    }
+
+    CloseHandle(hProcess);
+}
+
+// Función para obtener el uso de memoria de un proceso
+SIZE_T get_process_memory_usage(DWORD pid) {
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
+    if (hProcess == NULL) {
+        return 0;
+    }
+
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
+        CloseHandle(hProcess);
+        return pmc.WorkingSetSize; // Memoria en uso por el proceso (en bytes)
+    }
+
+    CloseHandle(hProcess);
+    return 0;
+}
+
+// Función para terminar un proceso dado su PID
+void kill_process(DWORD pid) {
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+    if (hProcess == NULL) {
+        printf("No se pudo abrir el proceso %d para terminarlo.\n", pid);
+        return;
+    }
+
+    if (TerminateProcess(hProcess, 1)) {
+        printf("Proceso %d terminado exitosamente.\n", pid);
+    } else {
+        printf("No se pudo terminar el proceso %d.\n", pid);
+    }
+
+    CloseHandle(hProcess);
+}
+
+// Función para buscar y terminar el proceso por nombre
+void kill_process_by_name(const char *target_name) {
+    DWORD processes[1024], cbNeeded, processCount;
+    unsigned int i;
+
+    if (!EnumProcesses(processes, sizeof(processes), &cbNeeded)) {
+        printf("No se pudieron enumerar los procesos.\n");
+        return;
+    }
+
+    processCount = cbNeeded / sizeof(DWORD);
+
+    for (i = 0; i < processCount; i++) {
+        DWORD pid = processes[i];
+        if (pid == 0) continue;
+
+        char process_name[MAX_PATH];
+        get_process_name(pid, process_name, sizeof(process_name));
+
+        // Comparamos el nombre del proceso con el nombre objetivo
+        if (strcmp(process_name, target_name) == 0) {
+            printf("Encontrado proceso: %s (PID: %d). Terminando proceso...\n", process_name, pid);
+            kill_process(pid);
+            return;  // Terminamos el primer proceso que encontramos
+        }
+    }
+
+    printf("No se encontró el proceso con nombre %s.\n", target_name);
+}
+
+int main() {
+    char process_name[256];
+    
+    // Solicitamos al usuario el nombre del proceso
+    printf("Ingrese el nombre del proceso a terminar: ");
+    scanf("%255s", process_name);
+
+    // Llamamos a la función para terminar el proceso con el nombre dado
+    kill_process_by_name(process_name);
+
+    return 0;
+}
+gcc -o kill_process_by_name kill_process_by_name.c -lpsapi
