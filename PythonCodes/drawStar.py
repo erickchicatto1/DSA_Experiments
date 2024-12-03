@@ -1,4 +1,5 @@
 import turtle
+import pdb
 
 def setup():
     "Provide a config for the screen"
@@ -18,7 +19,9 @@ def draw_square(size):
 setup()
 
 for i in range(0,12):
+    breakpoint()
     draw_square(50)
+    breakpoint()
     turtle.right(120)
     
 turtle.exitonclick()
