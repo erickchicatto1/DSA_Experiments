@@ -1,0 +1,9 @@
+STM32
+
+verde->pb3->spi_clk
+amarillo->pa6->spi_miso
+naranja->pa7->mosi
+rojo->pin can_cs
+
+
+MCP2515
