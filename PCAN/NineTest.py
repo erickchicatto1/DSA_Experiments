@@ -1,7 +1,7 @@
 """
 By Erick Chicatto
 This code send data to PCAN
-1 Jan 2025
+1 Jan 2025 7
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ def test_periodic_send_with_modifying_data(bus):
         return 
     time.sleep(2)
     
-    print("Changing data of running task to begin with 99")
-    msg.data[0] = 0x99
+    print("Changing data of running task to begin with 1")
+    msg.data[0] = 0x1
     task.modify_data(msg)
     time.sleep(2)
     task.stop()
@@ -84,7 +84,9 @@ if __name__ == "__main__":
             (0x300, [0xFF, 0x00, 0xFF]),
         ]
         
-        test_periodic_send_with_modifying_data(bus)
+        for i in range(5):
+            test_periodic_send_with_modifying_data(bus)
+            time.sleep(1)
         
         while True:
             for arbitration_id, data in messages:
